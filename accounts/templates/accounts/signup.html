@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% if error %}
+{{ error }}
+<br />
+<br />
+{% endif %}
+
+<h1>Create a new account!</h1>
+<form method="POST" action="{% url 'signup' %}">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">User Name</label>
+        <input type="text" class="form-control w-25" name="username">
+        <div id="emailHelp" class="form-text">We'll never share your user name with anyone else.</div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control w-25" name="password1">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Confirm Password</label>
+        <input type="password" class="form-control w-25" name="password2">
+    </div>
+    <button type="submit" class="btn btn-primary">Sign Up</button>
+</form>
+
+{% endblock %}
