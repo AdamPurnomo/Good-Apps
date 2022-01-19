@@ -3,7 +3,7 @@
 {% block content %}
 
 {% if user.is_authenticated %}
-Welcome back, {{ user.username}}
+Welcome back, {{ user.username }} {{ username }}
 {% else %}
 Welcome to Product Hunt Website
 {% endif %}
