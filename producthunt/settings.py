@@ -77,10 +77,10 @@ WSGI_APPLICATION = 'producthunt.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'producthuntdb',
         'USER': 'postgres',
-        'PASSWORD': 'archimedes',
+        'PASSWORD': 'archimedes123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -127,5 +127,7 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'producthunt/static/')
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
 STATIC_URL = '/static/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
