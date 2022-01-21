@@ -24,3 +24,11 @@ class Product(models.Model):
 
     def pub_date_pretty(self):
         return self.pub_date.strftime('%b %e %Y')
+
+
+class Upvote(models.Model):
+    votedby = models.ForeignKey(User, on_delete=models.CASCADE)
+    votedfor = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return

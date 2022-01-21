@@ -8,8 +8,10 @@
 <br />
 {% endif %}
 
+{% load staticfiles %}
+
 <h1>Hunt your product!!</h1>
-<form method="POST" action="{% url 'create' %}" enctype="multipart/form-data">
+<form id="create" method="POST" action="{% url 'create' %}" enctype="multipart/form-data">
     {% csrf_token %}
 
     <div class="mb-3">
@@ -18,7 +20,7 @@
     </div>
     <div class="mb-3">
         <label class="form-label">Body</label>
-        <input type="textbox" class="form-control" name="body">
+        <textarea type="textbox" class="form-control w-50 " rows="5" name="body"></textarea>
     </div>
     <div class="mb-3">
         <label class="form-label">URL</label>
@@ -32,7 +34,25 @@
         <label class="form-label">Image</label>
         <input type="file" class="form-control w-25" name="image">
     </div>
-    <button type="submit" class="btn btn-primary">Add Product</button>
+</form>
+
+<a href="javascript:{document.getElementById('create').submit()}">
+    <button class="btn btn-light">
+        <img src="{% static 'plus.png' %}" height=20 width=20 /> &nbsp;&nbsp; Add Product
+    </button>
+</a>
+
+&nbsp;&nbsp;
+
+<a href="javascript:{document.getElementById('cancel').submit()}">
+    <button class="btn btn-light">
+        <img src="{% static 'cancel.png' %}" height=20 width=20 /> &nbsp;&nbsp; Cancel
+    </button>
+</a>
+
+<form id="cancel" action="{% url 'home' %}">
+    {% csrf_token%}
+    <input type="hidden">
 </form>
 
 {% endblock %}
