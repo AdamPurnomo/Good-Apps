@@ -31,4 +31,4 @@ class Upvote(models.Model):
     votedfor = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     def __str__(self):
-        return
+        return str(self.votedby.username) + " upvoted for " + str(self.votedfor.title)

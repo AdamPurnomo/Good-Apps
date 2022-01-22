@@ -1,3 +1,4 @@
+from math import prod
 from django.conf.urls import url
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -9,17 +10,33 @@ from django.db.models import Q
 
 def home(request):
     products = Product.objects.order_by('-votes_total')
-    return render(request, 'products/home.html', {'products': products})
+    upvoted = []
+    for product in products:
+        upvoted.append(False)
+
+    if request.user.is_authenticated:
+        i = 0
+        for product in products:
+            try:
+                Upvote.objects.get(Q(votedby=request.user) &
+                                   Q(votedfor=product))
+                upvoted[i] = True
+            except Upvote.DoesNotExist:
+                pass
+            i += 1
+    return render(request, 'products/home.html', {'list': zip(products, upvoted)})
 
 
 def detail(request, product_id):
     product = get_object_or_404(Product, pk=product_id)
-    try:
-        upvote = Upvote.objects.get(
-            Q(votedby=request.user) & Q(votedfor=product))
-        upvote = True
-    except Upvote.DoesNotExist:
-        upvote = False
+    upvote = False
+    if request.user.is_authenticated:
+        try:
+            upvote = Upvote.objects.get(
+                Q(votedby=request.user) & Q(votedfor=product))
+            upvote = True
+        except Upvote.DoesNotExist:
+            pass
     return render(request, 'products/detail.html', {'product': product, 'upvote': upvote})
 
 

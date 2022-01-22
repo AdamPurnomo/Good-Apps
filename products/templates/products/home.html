@@ -13,18 +13,20 @@
 
 <script src="{% static 'products/script.js' %}"></script>
 
-{% for product in products.all %}
+{% for product, upvoted in list %}
 <br />
 <br />
 
-<div class="row" onclick="window.location='{% url 'detail' product.id %}';" style="cursor: pointer">
-    <div class="col-2">
+<div class="row" style="cursor: pointer">
+    <div class="col-2" onclick="window.location='{% url 'detail' product.id %}';">
         <img src="{{ product.icon.url }}" class="img-fluid" />
     </div>
-    <div class="col-6">
+    <div class="col-6" onclick="window.location='{% url 'detail' product.id %}';">
         <h2>{{ product.title }}</h2>
         <p>{{ product.summary }}</p>
     </div>
+
+    {% if upvoted == False %}
     <div class="col-4">
         <a href="javascript:{document.getElementById('upvote{{ product.id }}').submit()}">
             <button class="btn btn-primary btn-lg btn-block">
@@ -32,6 +34,15 @@
             </button>
         </a>
     </div>
+
+    {% else %}
+    <div class="col-4">
+        <button class="btn btn-secondary btn-lg btn-block">
+            <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ product.votes_total }}
+        </button>
+    </div>
+
+    {% endif %}
 </div>
 
 <form id="upvote{{ product.id }}" method="POST" action="{% url 'upvotehome' product.id %}">
