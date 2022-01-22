@@ -79,6 +79,19 @@ def upvote(request, product_id):
 
 
 @login_required(login_url='/accounts/signup')
+def deupvote(request, product_id):
+    if request.method == 'POST':
+        product = get_object_or_404(Product, pk=product_id)
+        product.votes_total -= 1
+        product.save()
+
+        upvote = Upvote.objects.get(
+            Q(votedby=request.user) & Q(votedfor=product))
+        upvote.delete()
+        return redirect('/products/' + str(product.id))
+
+
+@login_required(login_url='/accounts/signup')
 def upvotehome(request, product_id):
     if request.method == 'POST':
         product = get_object_or_404(Product, pk=product_id)
@@ -89,6 +102,19 @@ def upvotehome(request, product_id):
         upvote.votedby = request.user
         upvote.votedfor = product
         upvote.save()
+        return redirect('home')
+
+
+@login_required(login_url='/accounts/signup')
+def deupvotehome(request, product_id):
+    if request.method == 'POST':
+        product = get_object_or_404(Product, pk=product_id)
+        product.votes_total -= 1
+        product.save()
+
+        upvote = Upvote.objects.get(
+            Q(votedby=request.user) & Q(votedfor=product))
+        upvote.delete()
         return redirect('home')
 
 
