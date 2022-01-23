@@ -33,11 +33,22 @@ def detail(request, product_id):
     try:
         reviews = Review.objects.filter(reviewee=product).order_by('-pub_date')
         reviewlikes = []
+        likedbyuser = []
+        dislikedbyuser = []
         for review in reviews:
             numlikes = 0
             try:
                 likes = Like.objects.filter(likedpost=review)
                 numlikes = len(likes)
+
+                if request.user.is_authenticated:
+                    try:
+                        likes.get(likedby=request.user)
+                        likedbyuser.append(True)
+                    except Like.DoesNotExist:
+                        likedbyuser.append(False)
+                else:
+                    likedbyuser.append(False)
             except Like.DoesNotExist:
                 pass
 
@@ -45,8 +56,18 @@ def detail(request, product_id):
             try:
                 dislikes = Dislike.objects.filter(dislikedpost=review)
                 numdislikes = len(dislikes)
+
+                if request.user.is_authenticated:
+                    try:
+                        dislikes.get(dislikedby=request.user)
+                        dislikedbyuser.append(True)
+                    except Dislike.DoesNotExist:
+                        dislikedbyuser.append(False)
+                else:
+                    dislikedbyuser.append(False)
             except Dislike.DoesNotExist:
                 pass
+
             reviewlikes.append(numlikes-numdislikes)
     except Review.DoesNotExist:
         pass
@@ -60,7 +81,7 @@ def detail(request, product_id):
             upvote = True
         except Upvote.DoesNotExist:
             pass
-    return render(request, 'products/detail.html', {'product': product, 'upvote': upvote, 'reviews': zip(reviews, reviewlikes)})
+    return render(request, 'products/detail.html', {'product': product, 'upvote': upvote, 'reviewsbundle': zip(reviews, reviewlikes, likedbyuser, dislikedbyuser)})
 
 
 @ login_required(login_url='/accounts/signup')
@@ -151,12 +172,28 @@ def dislike(request, product_id, review_id):
 
 @ login_required(login_url='/accounts/signup')
 def unlike(request, product_id, review_id):
-    return None
+    if request.method == 'POST':
+        review = get_object_or_404(Review, pk=review_id)
+        try:
+            thumbup = Like.objects.get(
+                Q(likedpost=review) & Q(likedby=request.user))
+            thumbup.delete()
+        except Like.DoesNotExist:
+            pass
+    return redirect('/products/' + str(product_id))
 
 
 @ login_required(login_url='/accounts/signup')
 def undislike(request, product_id, review_id):
-    return None
+    if request.method == 'POST':
+        review = get_object_or_404(Review, pk=review_id)
+        try:
+            thumbdown = Dislike.objects.get(
+                Q(dislikedpost=review) & Q(dislikedby=request.user))
+            thumbdown.delete()
+        except Dislike.DoesNotExist:
+            pass
+    return redirect('/products/' + str(product_id))
 
 
 @ login_required(login_url='/accounts/signup')

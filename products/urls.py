@@ -14,9 +14,9 @@ urlpatterns = [
     path('<int:product_id>/saveedit', views.saveedit, name='saveedit'),
     path('<int:product_id>/review', views.review, name='review'),
     path('<int:product_id>/<int:review_id>/like', views.like, name='like'),
-    path('<int:product_id>/unlike', views.unlike, name='unlike'),
-    path('<int:product_id>/<int:review_id>dislike',
+    path('<int:product_id>/<int:review_id>/unlike', views.unlike, name='unlike'),
+    path('<int:product_id>/<int:review_id>/dislike',
          views.dislike, name='dislike'),
-    path('<int:product_id>/undislike',
+    path('<int:product_id>/<int:review_id>/undislike',
          views.undislike, name='undislike'),
 ]
