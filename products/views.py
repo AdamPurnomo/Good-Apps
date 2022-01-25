@@ -1,4 +1,5 @@
 from django.conf.urls import url
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Product, Upvote, Review, Like, Dislike
@@ -137,36 +138,40 @@ def upvote(request, product_id):
         return redirect('/products/' + str(product.id))
 
 
-@ login_required(login_url='/accounts/signup')
 def like(request, product_id, review_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
+        like_increment = 0
         review = get_object_or_404(Review, pk=review_id)
         try:
             thumbdown = Dislike.objects.get(
                 Q(dislikedpost=review) & Q(dislikedby=request.user))
             thumbdown.delete()
+            like_increment += 1
         except Dislike.DoesNotExist:
             pass
         thumbup = Like(likedby=request.user, likedpost=review)
         thumbup.save()
+        like_increment += 1
+        data = {'like_increment': like_increment}
+        return JsonResponse(data)
 
-    return redirect('/products/' + str(product_id))
 
-
-@ login_required(login_url='/accounts/signup')
 def dislike(request, product_id, review_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
+        like_decrement = 0
         review = get_object_or_404(Review, pk=review_id)
         try:
             thumbup = Like.objects.get(
                 Q(likedpost=review) & Q(likedby=request.user))
             thumbup.delete()
+            like_decrement += 1
         except Like.DoesNotExist:
             pass
         thumbdown = Dislike(dislikedby=request.user, dislikedpost=review)
         thumbdown.save()
-
-    return redirect('/products/' + str(product_id))
+        like_decrement += 1
+        data = {'like_decrement': like_decrement}
+        return JsonResponse(data)
 
 
 @ login_required(login_url='/accounts/signup')

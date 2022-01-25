@@ -116,18 +116,20 @@
             <a href="javascript:{document.getElementById('unlike{{ review.id }}').submit()}"><img
                     src="{% static 'liked.png' %}" height=20 width=20 /></a>
             {% else %}
-            <a href="javascript:{document.getElementById('like{{ review.id }}').submit()}"><img
-                    src="{% static 'like.png' %}" height=20 width=20 /></a>
+            <a href="" url="{% url 'like' product.id review.id %}" id="like{{ review.id }}" class="like">
+                <img src="{% static 'like.png' %}" height=20 width=20 />
+            </a>
             {% endif %}
 
-            &nbsp; {{ numlikes }} &nbsp;
+            &nbsp; <span id="numlikes{{ review.id }}">{{ numlikes }}</span> &nbsp;
 
             {% if disliked == True %}
             <a href="javascript:{document.getElementById('undislike{{ review.id }}').submit()}"><img
                     src="{% static 'disliked.png' %}" height=20 width=20 /></a>
             {% else %}
-            <a href="javascript:{document.getElementById('dislike{{ review.id }}').submit()}"><img
-                    src="{% static 'dislike.png' %}" height=20 width=20 /></a>
+            <a href="" url="{% url 'dislike' product.id review.id %}" id="dislike{{ review.id }}" class="dislike"><img
+                    src="{% static 'dislike.png' %}" height=20 width=20 />
+            </a>
             {% endif %}
 
         </p>
@@ -135,18 +137,13 @@
 </div>
 <br />
 
-
-<form id="like{{ review.id }}" method="POST" action="{% url 'like' product.id review.id %}">
+<!--
+<form id="like{{ review.id }}" method="POST" url="{% url 'like' product.id review.id %}">
     {% csrf_token%}
     <input type="hidden">
 </form>
-
+-->
 <form id="unlike{{ review.id }}" method="POST" action="{% url 'unlike' product.id review.id %}">
-    {% csrf_token%}
-    <input type="hidden">
-</form>
-
-<form id="dislike{{ review.id }}" method="POST" action="{% url 'dislike' product.id review.id %}">
     {% csrf_token%}
     <input type="hidden">
 </form>
@@ -155,6 +152,57 @@
     {% csrf_token%}
     <input type="hidden">
 </form>
+
+
+
 {% endfor %}
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+    jQuery(function ($) {
+        $('.like').click(function (e) {
+            e.preventDefault();
+            const id = e.currentTarget.id.replace('like', 'numlikes');
+            let numlikes = Number(document.getElementById(id).textContent);
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr("url"),
+                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+                success: function (data) {
+                    numlikes += data['like_increment'];
+                    document.getElementById(id).innerText = numlikes;
+                },
+                error: function () {
+                    window.location.href = "/accounts/signup"
+                },
+            });
+        });
+
+        $('.dislike').click(function (e) {
+            e.preventDefault();
+            const id = e.currentTarget.id.replace('dislike', 'numlikes');
+            let numlikes = Number(document.getElementById(id).textContent);
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr("url"),
+                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+                success: function (data) {
+                    numlikes -= data['like_decrement'];
+                    document.getElementById(id).innerText = numlikes;
+                },
+                error: function () {
+                    window.location.href = "/accounts/signup"
+                },
+            });
+        });
+    });
+
+
+
+</script>
 
 {% endblock %}
