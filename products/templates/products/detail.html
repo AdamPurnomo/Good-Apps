@@ -21,23 +21,22 @@
     <div class="col-8 text-center">
         <img src="{{ product.image.url }}" height=600 width=600 class="img-fluid" />
     </div>
-    {% if upvote == False %}
+
     <div class="col-4">
-        <a href="javascript:{document.getElementById('upvote').submit()}">
+        <a href="" class="upvote" url="{% url 'upvote' product.id %}">
             <button class="btn btn-primary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ product.votes_total }}
+                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; 
+                Upvote <span id="blue">{{ upvotesnum }}</span>
             </button>
         </a>
-    </div>
-    {% else %}
-    <div class="col-4">
-        <a href="javascript:{document.getElementById('deupvote').submit()}">
+
+        <a href="" class="deupvote" url="{% url 'deupvote' product.id %}" hidden>
             <button class="btn btn-secondary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ product.votes_total }}
+                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; 
+                Upvote <span id="grey">{{ upvotesnum }}</span> 
             </button>
         </a>
     </div>
-    {% endif %}
 </div>
 <br />
 
@@ -57,16 +56,6 @@
         <p>{{ product.body }}</cp>
     </div>
 </div>
-
-<form id="upvote" method="POST" action="{% url 'upvote' product.id %}">
-    {% csrf_token%}
-    <input type="hidden">
-</form>
-
-<form id="deupvote" method="POST" action="{% url 'deupvote' product.id %}">
-    {% csrf_token%}
-    <input type="hidden">
-</form>
 
 
 {% if user.is_authenticated and user.username == product.hunter.username %}
@@ -143,8 +132,15 @@
 {% block javascript %}
 <script>
 
+    //initial UI after rendering
+    let upvote = JSON.parse('{{ upvote|safe }}');
+    if(upvote===true) 
+    {
+        document.querySelector('.upvote').hidden =true;
+        document.querySelector('.deupvote').hidden =false;
+    }
+
     let userlikes = JSON.parse('{{ userlikes|safe }}');
-    console.log(userlikes)
     for(let i=0;i<userlikes.reviewID.length;i++)
     {
         let likeid = "like"+userlikes.reviewID[i];
@@ -165,6 +161,39 @@
 
     jQuery(function ($) {
         
+        $('.upvote').click(function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: "POST",
+                url: $(this).attr("url"),
+                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+                success: function (data) {
+                    document.getElementById("grey").innerText = data['upvotesnum'];
+                    document.querySelector('.upvote').hidden = true;
+                    document.querySelector('.deupvote').hidden = false;
+                },
+                error: function () {
+                    window.location.href = "/accounts/signup"
+                },
+            });
+        });
+
+        $('.deupvote').click(function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: "POST",
+                url: $(this).attr("url"),
+                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+                success: function (data) {
+                    document.getElementById("blue").innerText = data['upvotesnum'];
+                    document.querySelector('.deupvote').hidden = true;
+                    document.querySelector('.upvote').hidden = false;
+                },
+                error: function () {
+                    window.location.href = "/accounts/signup"
+                },
+            });
+        });
 
         $('.like').click(function (e) {
             e.preventDefault();

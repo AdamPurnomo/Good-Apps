@@ -2,6 +2,8 @@ from django.conf.urls import url
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from pandas import to_datetime
+from sqlalchemy import false, true
 from .models import Product, Upvote, Review, Like, Dislike
 from django.utils import timezone
 from django.db.models import Q
@@ -10,27 +12,47 @@ import json
 
 
 def home(request):
-    products = Product.objects.order_by('-votes_total')
+    products = Product.objects.all()
+    upvote_nums = []
     upvoted = []
-    for product in products:
-        upvoted.append(False)
-
-    if request.user.is_authenticated:
-        i = 0
-        for product in products:
+    for prod in products:
+        try:
+            upvote_nums.append(len(Upvote.objects.filter(votedfor=prod)))
+        except Upvote.DoesNotExist:
+            upvote_nums.append(0)
+            
+        if request.user.is_authenticated:
             try:
                 Upvote.objects.get(Q(votedby=request.user) &
-                                   Q(votedfor=product))
-                upvoted[i] = True
+                                   Q(votedfor=prod))
+                upvoted.append(True)
             except Upvote.DoesNotExist:
-                pass
-            i += 1
-    return render(request, 'products/home.html', {'list': zip(products, upvoted)})
+                upvoted.append(False)
+        else:
+            upvoted.append(False)
+        
+        data = sorted(list(zip(products, upvote_nums, upvoted)), key=lambda tup: tup[1], reverse=True)
+    return render(request, 'products/home.html', {'list': data})
 
 
 def detail(request, product_id):
     product = get_object_or_404(Product, pk=product_id)
-    upvote = False
+    try:
+        upvotes = Upvote.objects.filter(votedfor=product)
+        upvotesnum = len(upvotes)
+    except Upvote.DoesNotExist:
+        upvotesnum = 0
+
+    if request.user.is_authenticated:
+        try:
+            upvote = Upvote.objects.get(Q(votedby=request.user) & Q(votedfor=product))
+            upvote = True
+        except Upvote.DoesNotExist:
+            upvote = False
+    else: 
+        upvote = False
+    
+
     try:
         reviews = Review.objects.filter(reviewee=product).order_by('-pub_date')
         reviewlikes = []
@@ -74,18 +96,16 @@ def detail(request, product_id):
             reviewlikes.append(numlikes-numdislikes)
     except Review.DoesNotExist:
         pass
-
-    # Next, bundle each review with its like and dislikes
-
-    if request.user.is_authenticated:
-        try:
-            upvote = Upvote.objects.get(
-                Q(votedby=request.user) & Q(votedfor=product))
-            upvote = True
-        except Upvote.DoesNotExist:
-            pass
     userlikes = {'liked' : likedbyuser, 'disliked' : dislikedbyuser, 'reviewID': reviewID}
-    return render(request, 'products/detail.html', {'product': product, 'upvote': upvote, 'userlikes': json.dumps(userlikes), 'reviewsbundle': zip(reviews, reviewlikes)})
+    data = {
+        'product': product, 
+        'upvote': json.dumps(upvote), 
+        'upvotesnum': upvotesnum,
+        'userlikes': json.dumps(userlikes), 
+        'reviewsbundle': zip(reviews, reviewlikes)
+    }
+    
+    return render(request, 'products/detail.html', data)
 
 
 @ login_required(login_url='/accounts/signup')
@@ -93,7 +113,6 @@ def review(request, product_id):
     if request.method == 'POST':
         product = Product.objects.get(pk=product_id)
         if request.POST['body']:
-            print("review object created")
             rev = Review()
             rev.reviewer = request.user
             rev.reviewee = product
@@ -127,19 +146,30 @@ def saveedit(request, product_id):
         return redirect('/products/' + str(product.id))
 
 
-@ login_required(login_url='/accounts/signup')
 def upvote(request, product_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
         product = get_object_or_404(Product, pk=product_id)
-        product.votes_total += 1
-        product.save()
 
-        upvote = Upvote()
-        upvote.votedby = request.user
-        upvote.votedfor = product
+        upvote = Upvote(votedby=request.user, votedfor=product)
         upvote.save()
-        return redirect('/products/' + str(product.id))
+    
+        upvotes = Upvote.objects.filter(votedfor=product_id)
+        upvotes_total = len(upvotes)
+        data = {'upvotesnum':upvotes_total}
+        return JsonResponse(data)
 
+def deupvote(request, product_id):
+    if request.user.is_authenticated and request.method == 'POST':
+        product = get_object_or_404(Product, pk=product_id)
+
+        upvote = Upvote.objects.get(
+            Q(votedby=request.user) & Q(votedfor=product))
+        upvote.delete()
+
+        upvotes = Upvote.objects.filter(votedfor=product_id)
+        upvotes_total = len(upvotes)
+        data = {'upvotesnum':upvotes_total}
+        return JsonResponse(data)
 
 def like(request, product_id, review_id):
     if request.user.is_authenticated and request.method == 'POST':
@@ -207,28 +237,10 @@ def undislike(request, product_id, review_id):
 
 
 @ login_required(login_url='/accounts/signup')
-def deupvote(request, product_id):
-    if request.method == 'POST':
-        product = get_object_or_404(Product, pk=product_id)
-        product.votes_total -= 1
-        product.save()
-
-        upvote = Upvote.objects.get(
-            Q(votedby=request.user) & Q(votedfor=product))
-        upvote.delete()
-        return redirect('/products/' + str(product.id))
-
-
-@ login_required(login_url='/accounts/signup')
 def upvotehome(request, product_id):
     if request.method == 'POST':
         product = get_object_or_404(Product, pk=product_id)
-        product.votes_total += 1
-        product.save()
-
-        upvote = Upvote()
-        upvote.votedby = request.user
-        upvote.votedfor = product
+        upvote = Upvote(votedby=request.user, votedfor=product)
         upvote.save()
         return redirect('home')
 
@@ -237,9 +249,6 @@ def upvotehome(request, product_id):
 def deupvotehome(request, product_id):
     if request.method == 'POST':
         product = get_object_or_404(Product, pk=product_id)
-        product.votes_total -= 1
-        product.save()
-
         upvote = Upvote.objects.get(
             Q(votedby=request.user) & Q(votedfor=product))
         upvote.delete()

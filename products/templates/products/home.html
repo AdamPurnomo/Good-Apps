@@ -13,7 +13,7 @@
 
 <script src="{% static 'products/script.js' %}"></script>
 
-{% for product, upvoted in list %}
+{% for product, upvote_nums, upvoted in list %}
 <br />
 <br />
 
@@ -26,25 +26,24 @@
         <p>{{ product.summary }}</p>
     </div>
 
-    {% if upvoted == False %}
     <div class="col-4">
         <a href="javascript:{document.getElementById('upvote{{ product.id }}').submit()}">
             <button class="btn btn-primary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ product.votes_total }}
+                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ upvote_nums }}
             </button>
         </a>
-    </div>
 
-    {% else %}
-    <div class="col-4">
-        <a href="javascript:{document.getElementById('deupvote{{ product.id }}').submit()}">
+        <a href="javascript:{document.getElementById('deupvote{{ product.id }}').submit()}" hidden>
             <button class="btn btn-secondary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ product.votes_total }}
+                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ upvote_nums }}
             </button>
         </a>
     </div>
 
-    {% endif %}
+
+        
+
+
 </div>
 
 <form id="upvote{{ product.id }}" method="POST" action="{% url 'upvotehome' product.id %}">

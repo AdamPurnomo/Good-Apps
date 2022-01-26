@@ -13,7 +13,6 @@ class Product(models.Model):
     pub_date = models.DateTimeField()
     body = models.TextField()
     url = models.TextField()
-    votes_total = models.IntegerField(default=1)
     hunter = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
