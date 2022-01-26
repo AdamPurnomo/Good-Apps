@@ -103,7 +103,7 @@
 </div>
 <br />
 
-{% for review, numlikes, liked, disliked in reviewsbundle %}
+{% for review, numlikes in reviewsbundle %}
 <div class="row">
     <div class="col-8 border">
         <p>
@@ -142,6 +142,27 @@
 
 {% block javascript %}
 <script>
+
+    let userlikes = JSON.parse('{{ userlikes|safe }}');
+    console.log(userlikes)
+    for(let i=0;i<userlikes.reviewID.length;i++)
+    {
+        let likeid = "like"+userlikes.reviewID[i];
+        let dislikeid = "dislike"+userlikes.reviewID[i];
+        let unlikeid = "unlike"+userlikes.reviewID[i];
+        let undislikeid = "undislike"+userlikes.reviewID[i];
+
+        if(userlikes.liked[i]===true) {
+            document.getElementById(likeid).hidden = true;
+            document.getElementById(unlikeid).hidden = false;
+        }
+
+        if(userlikes.disliked[i]==true){
+            document.getElementById(dislikeid).hidden = true;
+            document.getElementById(undislikeid).hidden = false;
+        }   
+    }
+
     jQuery(function ($) {
         
 

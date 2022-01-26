@@ -36,7 +36,9 @@ def detail(request, product_id):
         reviewlikes = []
         likedbyuser = []
         dislikedbyuser = []
+        reviewID = []
         for review in reviews:
+            reviewID.append(review.id)
             numlikes = 0
             try:
                 likes = Like.objects.filter(likedpost=review)
@@ -82,7 +84,8 @@ def detail(request, product_id):
             upvote = True
         except Upvote.DoesNotExist:
             pass
-    return render(request, 'products/detail.html', {'product': product, 'upvote': upvote, 'likedbyuser': json.dumps(likedbyuser), 'reviewsbundle': zip(reviews, reviewlikes, likedbyuser, dislikedbyuser)})
+    userlikes = {'liked' : likedbyuser, 'disliked' : dislikedbyuser, 'reviewID': reviewID}
+    return render(request, 'products/detail.html', {'product': product, 'upvote': upvote, 'userlikes': json.dumps(userlikes), 'reviewsbundle': zip(reviews, reviewlikes)})
 
 
 @ login_required(login_url='/accounts/signup')
