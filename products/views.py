@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Product, Upvote, Review, Like, Dislike
 from django.utils import timezone
 from django.db.models import Q
+import json
 # Create your views here.
 
 
@@ -81,14 +82,13 @@ def detail(request, product_id):
             upvote = True
         except Upvote.DoesNotExist:
             pass
-    return render(request, 'products/detail.html', {'product': product, 'upvote': upvote, 'reviewsbundle': zip(reviews, reviewlikes, likedbyuser, dislikedbyuser)})
+    return render(request, 'products/detail.html', {'product': product, 'upvote': upvote, 'likedbyuser': json.dumps(likedbyuser), 'reviewsbundle': zip(reviews, reviewlikes, likedbyuser, dislikedbyuser)})
 
 
 @ login_required(login_url='/accounts/signup')
 def review(request, product_id):
     if request.method == 'POST':
         product = Product.objects.get(pk=product_id)
-        print("review func called")
         if request.POST['body']:
             print("review object created")
             rev = Review()
@@ -174,30 +174,33 @@ def dislike(request, product_id, review_id):
         return JsonResponse(data)
 
 
-@ login_required(login_url='/accounts/signup')
 def unlike(request, product_id, review_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
         review = get_object_or_404(Review, pk=review_id)
+        like_decrement = 0
         try:
             thumbup = Like.objects.get(
                 Q(likedpost=review) & Q(likedby=request.user))
             thumbup.delete()
+            like_decrement += 1
         except Like.DoesNotExist:
             pass
-    return redirect('/products/' + str(product_id))
+        data = {'like_decrement': like_decrement}
+    return JsonResponse(data)
 
-
-@ login_required(login_url='/accounts/signup')
 def undislike(request, product_id, review_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
         review = get_object_or_404(Review, pk=review_id)
+        like_increment = 0
         try:
             thumbdown = Dislike.objects.get(
                 Q(dislikedpost=review) & Q(dislikedby=request.user))
             thumbdown.delete()
+            like_increment +=1
         except Dislike.DoesNotExist:
             pass
-    return redirect('/products/' + str(product_id))
+        data = {'like_increment': like_increment}
+    return JsonResponse(data)
 
 
 @ login_required(login_url='/accounts/signup')

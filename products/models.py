@@ -59,4 +59,4 @@ class Dislike(models.Model):
     dislikedpost = models.ForeignKey(Review, on_delete=models.CASCADE)
 
     def __str__(self):
-        return str(self.likedby.username) + " dislikes " + str(self.likedpost.reviewer.username) + "'s on " + str(self.likedpost.reviewee.title)
+        return str(self.dislikedby.username) + " dislikes " + str(self.dislikedpost.reviewer.username) + "'s on " + str(self.dislikedpost.reviewee.title)
