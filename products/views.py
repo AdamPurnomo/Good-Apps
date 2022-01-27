@@ -8,14 +8,19 @@ from .models import Product, Upvote, Review, Like, Dislike
 from django.utils import timezone
 from django.db.models import Q
 import json
+from django.core.serializers.json import DjangoJSONEncoder
 # Create your views here.
+
+
 
 
 def home(request):
     products = Product.objects.all()
     upvote_nums = []
     upvoted = []
+    productID = []
     for prod in products:
+        productID.append(prod.id)
         try:
             upvote_nums.append(len(Upvote.objects.filter(votedfor=prod)))
         except Upvote.DoesNotExist:
@@ -31,8 +36,17 @@ def home(request):
         else:
             upvoted.append(False)
         
-        data = sorted(list(zip(products, upvote_nums, upvoted)), key=lambda tup: tup[1], reverse=True)
-    return render(request, 'products/home.html', {'list': data})
+        productsbundle = sorted(list(zip(products, upvote_nums, upvoted, productID)), key=lambda tup: tup[1], reverse=True)
+        upvoted = list(list(zip(*productsbundle))[2])
+        productID = list(list(zip(*productsbundle))[3])
+
+        data = {
+            'productsbundle':productsbundle,
+            'upvoted':json.dumps(upvoted),
+            'productID':json.dumps(productID),
+        }
+    
+    return render(request, 'products/home.html', data)
 
 
 def detail(request, product_id):
@@ -108,10 +122,11 @@ def detail(request, product_id):
     return render(request, 'products/detail.html', data)
 
 
-@ login_required(login_url='/accounts/signup')
+
 def review(request, product_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
         product = Product.objects.get(pk=product_id)
+        data = {}
         if request.POST['body']:
             rev = Review()
             rev.reviewer = request.user
@@ -119,7 +134,14 @@ def review(request, product_id):
             rev.body = request.POST['body']
             rev.pub_date = timezone.datetime.now()
             rev.save()
-        return redirect('/products/' + str(product.id))
+            data['body'] = rev.body
+            data['user'] = request.user.username
+            data['reviewID'] = rev.id
+            data['productID'] = product.id
+        return JsonResponse(data)
+            
+
+
 
 
 def edit(request, product_id):
@@ -236,23 +258,30 @@ def undislike(request, product_id, review_id):
     return JsonResponse(data)
 
 
-@ login_required(login_url='/accounts/signup')
 def upvotehome(request, product_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
         product = get_object_or_404(Product, pk=product_id)
         upvote = Upvote(votedby=request.user, votedfor=product)
         upvote.save()
-        return redirect('home')
+
+        upvotes = Upvote.objects.filter(votedfor=product_id)
+        upvotes_total = len(upvotes)
+        data = {'upvotesnum':upvotes_total}
+        return JsonResponse(data)
 
 
-@ login_required(login_url='/accounts/signup')
+
 def deupvotehome(request, product_id):
-    if request.method == 'POST':
+    if request.user.is_authenticated and request.method == 'POST':
         product = get_object_or_404(Product, pk=product_id)
         upvote = Upvote.objects.get(
             Q(votedby=request.user) & Q(votedfor=product))
         upvote.delete()
-        return redirect('home')
+
+        upvotes = Upvote.objects.filter(votedfor=product_id)
+        upvotes_total = len(upvotes)
+        data = {'upvotesnum':upvotes_total}
+        return JsonResponse(data)
 
 
 @ login_required

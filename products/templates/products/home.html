@@ -13,7 +13,7 @@
 
 <script src="{% static 'products/script.js' %}"></script>
 
-{% for product, upvote_nums, upvoted in list %}
+{% for product, upvote_nums, upvoted, productid in productsbundle %}
 <br />
 <br />
 
@@ -27,33 +27,84 @@
     </div>
 
     <div class="col-4">
-        <a href="javascript:{document.getElementById('upvote{{ product.id }}').submit()}">
+        <a href="" class="upvote" id="upvote{{ product.id }}" url="{% url 'upvotehome' product.id %}">
             <button class="btn btn-primary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ upvote_nums }}
+                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote 
+                <span id="blue{{ product.id }}">{{ upvote_nums }}</span> 
             </button>
         </a>
 
-        <a href="javascript:{document.getElementById('deupvote{{ product.id }}').submit()}" hidden>
+        <a href="" class="deupvote" id="deupvote{{ product.id }}" url="{% url 'deupvotehome' product.id %}" hidden>
             <button class="btn btn-secondary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote {{ upvote_nums }}
+                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote 
+                <span id="grey{{ product.id }}">{{ upvote_nums }}</span>  
             </button>
         </a>
     </div>
-
-
-        
-
-
 </div>
-
-<form id="upvote{{ product.id }}" method="POST" action="{% url 'upvotehome' product.id %}">
-    {% csrf_token%}
-    <input type="hidden">
-</form>
-
-<form id="deupvote{{ product.id }}" method="POST" action="{% url 'deupvotehome' product.id %}">
-    {% csrf_token%}
-    <input type="hidden">
-</form>
 {% endfor %}
+{% endblock %}
+
+{% block javascript %}
+<script>
+    //initial UI after rendering
+    let upvoted = JSON.parse('{{ upvoted|safe }}');
+    let productID = JSON.parse('{{ productID|safe }}');
+    for(let i=0;i<upvoted.length;i++)
+    {
+        let upvoteID = "upvote"+productID[i];
+        let deupvoteID = "deupvote"+productID[i];
+        if(upvoted[i]===true) {
+            console.log(upvoteID);
+            console.log(deupvoteID);
+            document.getElementById(upvoteID).hidden = true;
+            document.getElementById(deupvoteID).hidden = false;
+        }
+
+    }
+
+    
+    jQuery(function ($) {
+        $('.upvote').click(function (e){
+            e.preventDefault();
+            const curID = e.currentTarget.id;
+            const numID =curID.replace('upvote', 'grey');
+            const nextID = curID.replace('upvote', 'deupvote');
+            $.ajax({
+                type: "POST",
+                url: $(this).attr("url"),
+                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+                success: function (data) {
+                    document.getElementById(numID).innerText = data['upvotesnum'];
+                    document.getElementById(curID).hidden = true;
+                    document.getElementById(nextID).hidden = false;
+                },
+                error: function () {
+                    window.location.href = "/accounts/signup"
+                },
+            })
+        });
+
+        $('.deupvote').click(function (e){
+            e.preventDefault();
+            const curID = e.currentTarget.id;
+            const numID =curID.replace('deupvote', 'blue');
+            const nextID = curID.replace('deupvote', 'upvote');           
+            $.ajax({
+                type: "POST",
+                url: $(this).attr("url"),
+                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+                success: function (data) {
+                    document.getElementById(numID).innerText = data['upvotesnum'];
+                    document.getElementById(curID).hidden = true;
+                    document.getElementById(nextID).hidden = false;
+                },
+                error: function () {
+                    window.location.href = "/accounts/signup"
+                },
+            })
+        });
+
+    });
+</script>
 {% endblock %}
