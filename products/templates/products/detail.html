@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+<br />
 {% block content %}
 {% load staticfiles %}
 <div class="row">
@@ -10,7 +10,7 @@
 
     </div>
     <div class="col-2">
-        <a href="{{ product.url }}">
+        <a style="color:inherit; text-decoration: none;" href="{{ product.url }}">
             <h1>{{ product.title }}</h1>
         </a>
     </div>
@@ -62,7 +62,7 @@
 <div class="row">
     <div class="col-8 text-end">
         <a href="javascript:{document.getElementById('edit').submit()}">
-            <button class="btn btn-light btn-lg btn-block">
+            <button class="btn btn-light btn-lg btn-block btn-sm">
                 <img src="{% static 'pencil.png' %}" height=20 width=20 /> &nbsp;&nbsp; Edit
             </button>
         </a>
@@ -82,12 +82,11 @@
         {% csrf_token%}
 
         <div class="col-8">
-            <textarea type="textbox" class="form-control" rows="3" name="body"
-                placeholder="Write your review"></textarea>
+            <textarea type="textbox" class="form-control border-dark" rows="3" name="body"
+                placeholder="Write your review" style="background-color: transparent;"></textarea>
         </div>
-
-        <div class="col-8 text-end">
-            <button type="submit" class="btn btn-light"> Submit </button>
+        <div class="col-8 text-end mt-2">
+            <button type="submit" class="btn btn-dark btn-sm"> Submit </button>
         </div>
     </form>
 </div>
@@ -96,7 +95,7 @@
 <div class="reviews">
     {% for review, numlikes in reviewsbundle %}
     <div class="row">
-        <div class="col-8 border">
+        <div class="col-8 border border-dark">
             <p>
                 <img src="{% static 'user.png' %}" height=20 width=20 /> {{ review.reviewer }}
             </p>

@@ -8,20 +8,23 @@
 <br />
 {% endif %}
 
-<h1>Sign in your account</h1>
+<h3>Sign In Your Account</h3>
+
 <form method="POST" action="{% url 'signin' %}">
     {% csrf_token %}
 
     <div class="mb-3">
         <label class="form-label">User Name</label>
-        <input type="text" class="form-control w-25" name="username">
+        <input type="text" class="form-control w-25 border-dark" name="username" style="background-color: transparent;">
         <div id="emailHelp" class="form-text">We'll never share your user name with anyone else.</div>
     </div>
     <div class="mb-3">
         <label class="form-label">Password</label>
-        <input type="password" class="form-control w-25" name="password">
+        <input type="password" class="form-control w-25 border-dark" name="password"
+            style="background-color: transparent;">
     </div>
     <button type="submit" class="btn btn-primary">Sign In</button>
 </form>
+
 
 {% endblock %}
