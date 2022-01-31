@@ -9,23 +9,22 @@ from django.utils import timezone
 from django.db.models import Q
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core import serializers
 # Create your views here.
-
-
 
 
 def home(request):
     products = Product.objects.all()
     upvote_nums = []
     upvoted = []
-    productID = []
+    prodsum = []
     for prod in products:
-        productID.append(prod.id)
+        prodsum.append(prod.summary())
         try:
             upvote_nums.append(len(Upvote.objects.filter(votedfor=prod)))
         except Upvote.DoesNotExist:
             upvote_nums.append(0)
-            
+
         if request.user.is_authenticated:
             try:
                 Upvote.objects.get(Q(votedby=request.user) &
@@ -35,17 +34,18 @@ def home(request):
                 upvoted.append(False)
         else:
             upvoted.append(False)
-        
-        productsbundle = sorted(list(zip(products, upvote_nums, upvoted, productID)), key=lambda tup: tup[1], reverse=True)
-        upvoted = list(list(zip(*productsbundle))[2])
-        productID = list(list(zip(*productsbundle))[3])
+
+        productsbundle = sorted(list(zip(
+            products, upvote_nums, upvoted)), key=lambda tup: tup[1], reverse=True)
 
         data = {
-            'productsbundle':productsbundle,
-            'upvoted':json.dumps(upvoted),
-            'productID':json.dumps(productID),
+            'productsJSON': serializers.serialize('json', products),
+            'upvoted': json.dumps(upvoted),
+            'upvote_nums': json.dumps(upvote_nums),
+            'prodsum': json.dumps(prodsum),
+            'productsbundle': productsbundle,
         }
-    
+
     return render(request, 'products/home.html', data)
 
 
@@ -59,13 +59,13 @@ def detail(request, product_id):
 
     if request.user.is_authenticated:
         try:
-            upvote = Upvote.objects.get(Q(votedby=request.user) & Q(votedfor=product))
+            upvote = Upvote.objects.get(
+                Q(votedby=request.user) & Q(votedfor=product))
             upvote = True
         except Upvote.DoesNotExist:
             upvote = False
-    else: 
+    else:
         upvote = False
-    
 
     try:
         reviews = Review.objects.filter(reviewee=product).order_by('-pub_date')
@@ -110,17 +110,17 @@ def detail(request, product_id):
             reviewlikes.append(numlikes-numdislikes)
     except Review.DoesNotExist:
         pass
-    userlikes = {'liked' : likedbyuser, 'disliked' : dislikedbyuser, 'reviewID': reviewID}
+    userlikes = {'liked': likedbyuser,
+                 'disliked': dislikedbyuser, 'reviewID': reviewID}
     data = {
-        'product': product, 
-        'upvote': json.dumps(upvote), 
+        'product': product,
+        'upvote': json.dumps(upvote),
         'upvotesnum': upvotesnum,
-        'userlikes': json.dumps(userlikes), 
+        'userlikes': json.dumps(userlikes),
         'reviewsbundle': zip(reviews, reviewlikes)
     }
-    
-    return render(request, 'products/detail.html', data)
 
+    return render(request, 'products/detail.html', data)
 
 
 def review(request, product_id):
@@ -139,9 +139,6 @@ def review(request, product_id):
             data['reviewID'] = rev.id
             data['productID'] = product.id
         return JsonResponse(data)
-            
-
-
 
 
 def edit(request, product_id):
@@ -174,11 +171,12 @@ def upvote(request, product_id):
 
         upvote = Upvote(votedby=request.user, votedfor=product)
         upvote.save()
-    
+
         upvotes = Upvote.objects.filter(votedfor=product_id)
         upvotes_total = len(upvotes)
-        data = {'upvotesnum':upvotes_total}
+        data = {'upvotesnum': upvotes_total}
         return JsonResponse(data)
+
 
 def deupvote(request, product_id):
     if request.user.is_authenticated and request.method == 'POST':
@@ -190,8 +188,9 @@ def deupvote(request, product_id):
 
         upvotes = Upvote.objects.filter(votedfor=product_id)
         upvotes_total = len(upvotes)
-        data = {'upvotesnum':upvotes_total}
+        data = {'upvotesnum': upvotes_total}
         return JsonResponse(data)
+
 
 def like(request, product_id, review_id):
     if request.user.is_authenticated and request.method == 'POST':
@@ -243,6 +242,7 @@ def unlike(request, product_id, review_id):
         data = {'like_decrement': like_decrement}
     return JsonResponse(data)
 
+
 def undislike(request, product_id, review_id):
     if request.user.is_authenticated and request.method == 'POST':
         review = get_object_or_404(Review, pk=review_id)
@@ -251,7 +251,7 @@ def undislike(request, product_id, review_id):
             thumbdown = Dislike.objects.get(
                 Q(dislikedpost=review) & Q(dislikedby=request.user))
             thumbdown.delete()
-            like_increment +=1
+            like_increment += 1
         except Dislike.DoesNotExist:
             pass
         data = {'like_increment': like_increment}
@@ -266,9 +266,8 @@ def upvotehome(request, product_id):
 
         upvotes = Upvote.objects.filter(votedfor=product_id)
         upvotes_total = len(upvotes)
-        data = {'upvotesnum':upvotes_total}
+        data = {'upvotesnum': upvotes_total}
         return JsonResponse(data)
-
 
 
 def deupvotehome(request, product_id):
@@ -280,7 +279,7 @@ def deupvotehome(request, product_id):
 
         upvotes = Upvote.objects.filter(votedfor=product_id)
         upvotes_total = len(upvotes)
-        data = {'upvotesnum':upvotes_total}
+        data = {'upvotesnum': upvotes_total}
         return JsonResponse(data)
 
 

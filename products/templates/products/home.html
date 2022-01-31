@@ -13,71 +13,90 @@
 
 <script src="{% static 'products/script.js' %}"></script>
 
-{% for product, upvote_nums, upvoted, productid in productsbundle %}
-<br />
-<br />
+<div class='product-list'>
 
-<div class="row" style="cursor: pointer">
-    <div class="col-2" onclick="window.location='{% url 'detail' product.id %}';">
-        <img src="{{ product.icon.url }}" class="img-fluid" />
-    </div>
-    <div class="col-6" onclick="window.location='{% url 'detail' product.id %}';">
-        <h2>{{ product.title }}</h2>
-        <p>{{ product.summary }}</p>
-    </div>
-
-    <div class="col-4">
-        <a href="" class="upvote" id="upvote{{ product.id }}" url="{% url 'upvotehome' product.id %}">
-            <button class="btn btn-primary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote 
-                <span id="blue{{ product.id }}">{{ upvote_nums }}</span> 
-            </button>
-        </a>
-
-        <a href="" class="deupvote" id="deupvote{{ product.id }}" url="{% url 'deupvotehome' product.id %}" hidden>
-            <button class="btn btn-secondary btn-lg btn-block">
-                <img src="{% static 'arrow.png' %}" height=20 width=20 /> &nbsp;&nbsp; Upvote 
-                <span id="grey{{ product.id }}">{{ upvote_nums }}</span>  
-            </button>
-        </a>
-    </div>
 </div>
-{% endfor %}
 {% endblock %}
 
 {% block javascript %}
 <script>
     //initial UI after rendering
+    let productsJSON = JSON.parse('{{ productsJSON|escapejs }}');
     let upvoted = JSON.parse('{{ upvoted|safe }}');
-    let productID = JSON.parse('{{ productID|safe }}');
-    for(let i=0;i<upvoted.length;i++)
-    {
-        let upvoteID = "upvote"+productID[i];
-        let deupvoteID = "deupvote"+productID[i];
-        if(upvoted[i]===true) {
-            console.log(upvoteID);
-            console.log(deupvoteID);
-            document.getElementById(upvoteID).hidden = true;
-            document.getElementById(deupvoteID).hidden = false;
+    let upvoteNums = JSON.parse('{{ upvote_nums|safe }}');
+    let prodSum = JSON.parse('{{ prodsum|escapejs }}');
+
+    // add additional object
+    productsJSON.forEach((element, i) => {
+        element.upvoted = upvoted[i];
+        element.upvoteNums = upvoteNums[i];
+        element.summary = prodSum[i];
+    });
+
+    const updateUI = function () {
+        // sort
+        productsJSON.sort((a, b) => a.upvoteNums - b.upvoteNums);
+
+
+        // replace and insert html
+        $('.product-list').html("");
+        for (let i = 0; i < productsJSON.length; i++) {
+            $('.product-list').prepend(
+                `
+<br />
+<br />
+
+<div class="row" style="cursor: pointer">
+    <div class="col-2" onclick="window.location='/products/${productsJSON[i].pk}'">
+        <img src="/media/${productsJSON[i].fields.icon}" class="img-fluid" />
+    </div>
+    <div class="col-6" onclick="window.location='/products/${productsJSON[i].pk}'">
+        <h2>${productsJSON[i].fields.title}</h2>
+        <p>${productsJSON[i].summary}</p>
+    </div>
+
+    <div class="col-4">
+        <a href="" class="upvote" id="upvote${productsJSON[i].pk}" url="/products/${productsJSON[i].pk}/upvotehome">
+            <button class="btn btn-primary btn-lg btn-block">
+                <img src="/static/arrow.png" height=20 width=20 /> &nbsp;&nbsp; Upvote
+                <span id="blue${productsJSON[i].pk}">${productsJSON[i].upvoteNums}</span>
+            </button>
+        </a>
+
+        <a href="" class="deupvote" id="deupvote${productsJSON[i].pk}" url="/products/${productsJSON[i].pk}/deupvotehome" hidden>
+            <button class="btn btn-secondary btn-lg btn-block">
+                <img src="/static/arrow.png" height=20 width=20 /> &nbsp;&nbsp; Upvote
+                <span id="grey${productsJSON[i].pk}">${productsJSON[i].upvoteNums}</span>
+            </button>
+        </a>
+    </div>
+</div>
+
+            `);
+
+            if (productsJSON[i].upvoted === true) {
+                document.getElementById(`upvote${productsJSON[i].pk}`).hidden = true;
+                document.getElementById(`deupvote${productsJSON[i].pk}`).hidden = false;
+            }
         }
+    };
 
-    }
+    updateUI();
 
-    
+
     jQuery(function ($) {
-        $('.upvote').click(function (e){
+        $('.product-list').on('click', '.upvote', function (e) {
             e.preventDefault();
-            const curID = e.currentTarget.id;
-            const numID =curID.replace('upvote', 'grey');
-            const nextID = curID.replace('upvote', 'deupvote');
+            const pk = Number(e.currentTarget.id.replace('upvote', ''));
             $.ajax({
                 type: "POST",
                 url: $(this).attr("url"),
                 data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
                 success: function (data) {
-                    document.getElementById(numID).innerText = data['upvotesnum'];
-                    document.getElementById(curID).hidden = true;
-                    document.getElementById(nextID).hidden = false;
+                    const arrIndex = productsJSON.map(element => element.pk).indexOf(pk);
+                    productsJSON[arrIndex].upvoteNums = data['upvotesnum'];
+                    productsJSON[arrIndex].upvoted = true;
+                    updateUI();
                 },
                 error: function () {
                     window.location.href = "/accounts/signup"
@@ -85,19 +104,18 @@
             })
         });
 
-        $('.deupvote').click(function (e){
+        $('.product-list').on('click', '.deupvote', function (e) {
             e.preventDefault();
-            const curID = e.currentTarget.id;
-            const numID =curID.replace('deupvote', 'blue');
-            const nextID = curID.replace('deupvote', 'upvote');           
+            const pk = Number(e.currentTarget.id.replace('deupvote', ''));
             $.ajax({
                 type: "POST",
                 url: $(this).attr("url"),
                 data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
                 success: function (data) {
-                    document.getElementById(numID).innerText = data['upvotesnum'];
-                    document.getElementById(curID).hidden = true;
-                    document.getElementById(nextID).hidden = false;
+                    const arrIndex = productsJSON.map(element => element.pk).indexOf(pk);
+                    productsJSON[arrIndex].upvoteNums = data['upvotesnum'];
+                    productsJSON[arrIndex].upvoted = false;
+                    updateUI();
                 },
                 error: function () {
                     window.location.href = "/accounts/signup"
