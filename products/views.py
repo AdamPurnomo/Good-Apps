@@ -149,6 +149,7 @@ def edit(request, product_id):
 def saveedit(request, product_id):
     product = get_object_or_404(Product, pk=product_id)
     if request.method == 'POST':
+        print(request.POST)
         if request.POST['title'] and request.POST['body'] and request.POST['url']:
             product.title = request.POST['title']
             product.body = request.POST['body']
@@ -156,6 +157,12 @@ def saveedit(request, product_id):
                 product.url = request.POST['url']
             else:
                 product.url = 'http://' + request.POST['url']
+
+            if 'icon' in request.POST and request.POST['icon']:
+                product.icon = request.FILES['icon']
+                print("inside a func")
+            if 'image' in request.POST and request.POST['image']:
+                product.image = request.FILES['image']
             product.save()  # save data to database
             return redirect('/products/' + str(product.id))
         else:
