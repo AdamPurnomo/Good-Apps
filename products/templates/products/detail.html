@@ -4,13 +4,14 @@
 {% load staticfiles %}
 <div class="row">
     <div class="col-1">
-        <a href="{{ product.url }}">
+        <a href="{{ product.url }}" target="_blank" rel="noopener noreferrer">
             <img src="{{ product.icon.url }}" height=80 width=80 class="img-fluid" />
         </a>
 
     </div>
     <div class="col-2">
-        <a style="color:inherit; text-decoration: none;" href="{{ product.url }}">
+        <a style="color:inherit; text-decoration: none;" href="{{ product.url }}" target="_blank"
+            rel="noopener noreferrer">
             <h1>{{ product.title }}</h1>
         </a>
     </div>
@@ -42,7 +43,7 @@
 
 <div class="row">
     <div class="col-4">
-        <h4>Hunted by {{ product.hunter.username }}</h4>
+        <h4>Posted by {{ product.hunter.username }}</h4>
     </div>
     <div class="col-4 text-end">
         <h4><img src="{% static 'calendar.jpg' %}" height=20 width=20 />&nbsp;&nbsp;{{ product.pub_date_pretty }}</h4>
