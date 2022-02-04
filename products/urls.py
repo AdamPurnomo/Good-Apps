@@ -19,4 +19,6 @@ urlpatterns = [
          views.dislike, name='dislike'),
     path('<int:product_id>/<int:review_id>/undislike',
          views.undislike, name='undislike'),
+    path('<int:review_id>/deletereview',
+         views.deletereview, name='deletereview'),
 ]

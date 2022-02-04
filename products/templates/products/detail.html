@@ -94,13 +94,22 @@
 
 <div class="reviews">
     {% for review, numlikes in reviewsbundle %}
-    <div class="row">
+    <div class="row revcontainer{{ review.id }}">
         <div class="col-8 border border-dark">
             <p>
                 <img src="{% static 'user.png' %}" height=20 width=20 /> {{ review.reviewer }}
             </p>
             <p>{{ review.body }}</p>
             <p class="text-end">
+
+                <a href="" url="{% url 'deletereview' review.id %}" id="delete{{ review.id }}" class="deletereview"
+                    hidden>
+                    <img src="{% static 'delete.png' %}" height=20 width=20 />
+                </a>
+
+
+                &nbsp;
+
                 <a href="" url="{% url 'unlike' product.id review.id %}" id="unlike{{ review.id }}" class="unlike"
                     hidden>
                     <img src="{% static 'liked.png' %}" height=20 width=20 />
@@ -125,7 +134,10 @@
             </p>
         </div>
     </div>
-    <br />
+    <div class="revcontainer{{ review.id }}">
+        <br />
+    </div>
+
     {% endfor %}
 </div>
 {% endblock %}
@@ -146,7 +158,11 @@
         let dislikeid = "dislike" + userlikes.reviewID[i];
         let unlikeid = "unlike" + userlikes.reviewID[i];
         let undislikeid = "undislike" + userlikes.reviewID[i];
+        let deleteid = "delete" + userlikes.reviewID[i]
 
+        if (userlikes.reviewer[i] === true) {
+            document.getElementById(deleteid).hidden = false;
+        }
         if (userlikes.liked[i] === true) {
             document.getElementById(likeid).hidden = true;
             document.getElementById(unlikeid).hidden = false;
@@ -172,15 +188,23 @@
                 dataType: 'json',
                 success: function (data) {
                     $('textarea[name="body"]').val("");
-                    $('.reviews').prepend(
-                        `
-<div class="row">
+                    if (!('error' in data)) {
+                        $('.reviews').prepend(
+                            `
+<div class="row revcontainer${data.reviewID}">
     <div class="col-8 border border-dark">
         <p>
             <img src="{% static 'user.png' %}" height=20 width=20 /> ${data.user}
         </p>
         <p>${data.body}</p>
         <p class="text-end">
+            <a href="" url="/products/${data.reviewID}/deletereview" id="delete${data.reviewID}" class="deletereview"
+                    >
+                    <img src="{% static 'delete.png' %}" height=20 width=20 />
+            </a>
+
+            &nbsp;
+
             <a href="" url="/products/${data.productID}/${data.reviewID}/unlike" id="unlike${data.reviewID}" class="unlike" hidden>
                 <img src="{% static 'liked.png' %}" height=20 width=20 />
             </a>
@@ -203,73 +227,14 @@
         </p>
     </div>
 </div>
-<br />
+
+<div class="revcontainer${data.reviewID}">
+    <br />
+</div>
+
   `
 
-                    )
-                },
-                error: function () {
-                    window.location.href = "/accounts/signup"
-                },
-            });
-        });
-
-        $('.upvote').click(function (e) {
-            e.preventDefault();
-            $.ajax({
-                type: "POST",
-                url: $(this).attr("url"),
-                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
-                success: function (data) {
-                    document.getElementById("grey").innerText = data['upvotesnum'];
-                    document.querySelector('.upvote').hidden = true;
-                    document.querySelector('.deupvote').hidden = false;
-                },
-                error: function () {
-                    window.location.href = "/accounts/signup"
-                },
-            });
-        });
-
-        $('.deupvote').click(function (e) {
-            e.preventDefault();
-            $.ajax({
-                type: "POST",
-                url: $(this).attr("url"),
-                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
-                success: function (data) {
-                    document.getElementById("blue").innerText = data['upvotesnum'];
-                    document.querySelector('.deupvote').hidden = true;
-                    document.querySelector('.upvote').hidden = false;
-                },
-                error: function () {
-                    window.location.href = "/accounts/signup"
-                },
-            });
-        });
-
-        $('.reviews').on('click', '.like', function (e) {
-            e.preventDefault();
-            const curID = e.currentTarget.id;
-            const numID = curID.replace('like', 'numlikes');
-            const nextID = curID.replace('like', 'unlike');
-            let numlikes = Number(document.getElementById(numID).textContent);
-
-            $.ajax({
-                type: "POST",
-                url: $(this).attr("url"),
-                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
-                success: function (data) {
-                    numlikes += data['like_increment'];
-                    document.getElementById(numID).innerText = numlikes;
-                    document.getElementById(curID).hidden = true;
-                    document.getElementById(nextID).hidden = false;
-
-                    if (data['like_increment'] === 2) {
-                        let ID = curID.replace('like', 'undislike');
-                        document.getElementById(ID).hidden = true;
-                        ID = curID.replace('like', 'dislike');
-                        document.getElementById(ID).hidden = false;
+                        )
                     }
                 },
                 error: function () {
@@ -278,80 +243,162 @@
             });
         });
 
-        $('.reviews').on('click', '.unlike', function (e) {
+        $('.reviews').on('click', '.deletereview', function (e) {
             e.preventDefault();
-            const curID = e.currentTarget.id;
-            const numID = curID.replace('unlike', 'numlikes');
-            const nextID = curID.replace('unlike', 'like');
-            let numlikes = Number(document.getElementById(numID).textContent);
+            const deleteID = e.currentTarget.id;
+            const targetID = deleteID.replace('delete', 'revcontainer');
 
             $.ajax({
                 type: "POST",
                 url: $(this).attr("url"),
                 data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
                 success: function (data) {
-                    numlikes -= data['like_decrement'];
-                    document.getElementById(numID).innerText = numlikes;
-                    document.getElementById(curID).hidden = true;
-                    document.getElementById(nextID).hidden = false;
+                    $(`.${targetID}`).remove();
                 },
                 error: function () {
                     window.location.href = "/accounts/signup"
                 },
             });
         });
+    });
 
-        $('.reviews').on('click', '.dislike', function (e) {
-            e.preventDefault();
-            const curID = e.currentTarget.id;
-            const numID = curID.replace('dislike', 'numlikes');
-            const nextID = curID.replace('dislike', 'undislike');
-            let numlikes = Number(document.getElementById(numID).textContent);
-
-            $.ajax({
-                type: "POST",
-                url: $(this).attr("url"),
-                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
-                success: function (data) {
-                    numlikes -= data['like_decrement'];
-                    document.getElementById(numID).innerText = numlikes;
-                    document.getElementById(curID).hidden = true;
-                    document.getElementById(nextID).hidden = false;
-
-                    if (data['like_decrement'] === 2) {
-                        let ID = curID.replace('dislike', 'unlike');
-                        document.getElementById(ID).hidden = true;
-                        ID = curID.replace('dislike', 'like');
-                        document.getElementById(ID).hidden = false;
-                    }
-                },
-                error: function () {
-                    window.location.href = "/accounts/signup"
-                },
-            });
+    $('.upvote').click(function (e) {
+        e.preventDefault();
+        $.ajax({
+            type: "POST",
+            url: $(this).attr("url"),
+            data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+            success: function (data) {
+                document.getElementById("grey").innerText = data['upvotesnum'];
+                document.querySelector('.upvote').hidden = true;
+                document.querySelector('.deupvote').hidden = false;
+            },
+            error: function () {
+                window.location.href = "/accounts/signup"
+            },
         });
+    });
 
-        $('.reviews').on('click', '.undislike', function (e) {
-            e.preventDefault();
-            const curID = e.currentTarget.id;
-            const numID = curID.replace('undislike', 'numlikes');
-            const nextID = curID.replace('undislike', 'dislike');
-            let numlikes = Number(document.getElementById(numID).textContent);
+    $('.deupvote').click(function (e) {
+        e.preventDefault();
+        $.ajax({
+            type: "POST",
+            url: $(this).attr("url"),
+            data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+            success: function (data) {
+                document.getElementById("blue").innerText = data['upvotesnum'];
+                document.querySelector('.deupvote').hidden = true;
+                document.querySelector('.upvote').hidden = false;
+            },
+            error: function () {
+                window.location.href = "/accounts/signup"
+            },
+        });
+    });
 
-            $.ajax({
-                type: "POST",
-                url: $(this).attr("url"),
-                data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
-                success: function (data) {
-                    numlikes += data['like_increment'];
-                    document.getElementById(numID).innerText = numlikes;
-                    document.getElementById(curID).hidden = true;
-                    document.getElementById(nextID).hidden = false;
-                },
-                error: function () {
-                    window.location.href = "/accounts/signup"
-                },
-            });
+    $('.reviews').on('click', '.like', function (e) {
+        e.preventDefault();
+        const curID = e.currentTarget.id;
+        const numID = curID.replace('like', 'numlikes');
+        const nextID = curID.replace('like', 'unlike');
+        let numlikes = Number(document.getElementById(numID).textContent);
+
+        $.ajax({
+            type: "POST",
+            url: $(this).attr("url"),
+            data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+            success: function (data) {
+                numlikes += data['like_increment'];
+                document.getElementById(numID).innerText = numlikes;
+                document.getElementById(curID).hidden = true;
+                document.getElementById(nextID).hidden = false;
+
+                if (data['like_increment'] === 2) {
+                    let ID = curID.replace('like', 'undislike');
+                    document.getElementById(ID).hidden = true;
+                    ID = curID.replace('like', 'dislike');
+                    document.getElementById(ID).hidden = false;
+                }
+            },
+            error: function () {
+                window.location.href = "/accounts/signup"
+            },
+        });
+    });
+
+    $('.reviews').on('click', '.unlike', function (e) {
+        e.preventDefault();
+        const curID = e.currentTarget.id;
+        const numID = curID.replace('unlike', 'numlikes');
+        const nextID = curID.replace('unlike', 'like');
+        let numlikes = Number(document.getElementById(numID).textContent);
+
+        $.ajax({
+            type: "POST",
+            url: $(this).attr("url"),
+            data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+            success: function (data) {
+                numlikes -= data['like_decrement'];
+                document.getElementById(numID).innerText = numlikes;
+                document.getElementById(curID).hidden = true;
+                document.getElementById(nextID).hidden = false;
+            },
+            error: function () {
+                window.location.href = "/accounts/signup"
+            },
+        });
+    });
+
+    $('.reviews').on('click', '.dislike', function (e) {
+        e.preventDefault();
+        const curID = e.currentTarget.id;
+        const numID = curID.replace('dislike', 'numlikes');
+        const nextID = curID.replace('dislike', 'undislike');
+        let numlikes = Number(document.getElementById(numID).textContent);
+
+        $.ajax({
+            type: "POST",
+            url: $(this).attr("url"),
+            data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+            success: function (data) {
+                numlikes -= data['like_decrement'];
+                document.getElementById(numID).innerText = numlikes;
+                document.getElementById(curID).hidden = true;
+                document.getElementById(nextID).hidden = false;
+
+                if (data['like_decrement'] === 2) {
+                    let ID = curID.replace('dislike', 'unlike');
+                    document.getElementById(ID).hidden = true;
+                    ID = curID.replace('dislike', 'like');
+                    document.getElementById(ID).hidden = false;
+                }
+            },
+            error: function () {
+                window.location.href = "/accounts/signup"
+            },
+        });
+    });
+
+    $('.reviews').on('click', '.undislike', function (e) {
+        e.preventDefault();
+        const curID = e.currentTarget.id;
+        const numID = curID.replace('undislike', 'numlikes');
+        const nextID = curID.replace('undislike', 'dislike');
+        let numlikes = Number(document.getElementById(numID).textContent);
+
+        $.ajax({
+            type: "POST",
+            url: $(this).attr("url"),
+            data: { csrfmiddlewaretoken: window.CSRF_TOKEN },
+            success: function (data) {
+                numlikes += data['like_increment'];
+                document.getElementById(numID).innerText = numlikes;
+                document.getElementById(curID).hidden = true;
+                document.getElementById(nextID).hidden = false;
+            },
+            error: function () {
+                window.location.href = "/accounts/signup"
+            },
         });
     });
 </script>

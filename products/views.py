@@ -70,11 +70,18 @@ def detail(request, product_id):
     try:
         reviews = Review.objects.filter(reviewee=product).order_by('-pub_date')
         reviewlikes = []
+        reviewer = []
         likedbyuser = []
         dislikedbyuser = []
         reviewID = []
         for review in reviews:
             reviewID.append(review.id)
+
+            if request.user.is_authenticated and review.reviewer.username == request.user.username:
+                reviewer.append(True)
+            else:
+                reviewer.append(False)
+
             numlikes = 0
             try:
                 likes = Like.objects.filter(likedpost=review)
@@ -111,7 +118,7 @@ def detail(request, product_id):
     except Review.DoesNotExist:
         pass
     userlikes = {'liked': likedbyuser,
-                 'disliked': dislikedbyuser, 'reviewID': reviewID}
+                 'disliked': dislikedbyuser, 'reviewID': reviewID, 'reviewer': reviewer}
     data = {
         'product': product,
         'upvote': json.dumps(upvote),
@@ -138,7 +145,17 @@ def review(request, product_id):
             data['user'] = request.user.username
             data['reviewID'] = rev.id
             data['productID'] = product.id
+            return JsonResponse(data)
+        else:
+            data['error'] = 0
         return JsonResponse(data)
+
+
+def deletereview(request, review_id):
+    if request.user.is_authenticated and request.method == 'POST':
+        review = Review.objects.get(pk=review_id)
+        review.delete()
+        return JsonResponse({})
 
 
 def edit(request, product_id):
